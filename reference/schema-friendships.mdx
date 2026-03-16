@@ -1,0 +1,153 @@
+---
+title: "Schema: friendships"
+description: "Database schema reference for the friendships table and the weekly_rankings view, which power the social and leaderboard features."
+---
+
+The `friendships` table records directed relationships between users. Together with the `weekly_rankings` view, it powers the social leaderboard where users can compare their weekly emissions with friends.
+
+## CREATE TABLE
+
+```sql
+CREATE TABLE IF NOT EXISTS friendships (
+  id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  friend_id  UUID        NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, friend_id)
+);
+```
+
+## Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key, automatically generated.
+</ResponseField>
+
+<ResponseField name="user_id" type="uuid" required>
+  The user who initiated the friendship (the adder). References `profiles.id` with `ON DELETE CASCADE` — if the user's profile is deleted, their outgoing friendship rows are removed automatically.
+</ResponseField>
+
+<ResponseField name="friend_id" type="uuid" required>
+  The user who was added as a friend (the recipient). Also references `profiles.id` with `ON DELETE CASCADE`.
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz">
+  Timestamp when the friendship was created. Defaults to `NOW()`.
+</ResponseField>
+
+<Note>
+  The `UNIQUE(user_id, friend_id)` constraint prevents duplicate friendship entries. Friendships are **directional** — user A adding user B does not automatically create a row with the roles reversed.
+</Note>
+
+## Row-level security (RLS)
+
+Three separate RLS policies govern access to the `friendships` table.
+
+| Policy | Operation | Expression |
+|--------|-----------|------------|
+| Users can view friendships they are part of | `SELECT` | `auth.uid() = user_id OR auth.uid() = friend_id` |
+| Users can add friendships | `INSERT` | `auth.uid() = user_id` |
+| Users can remove their own friendships | `DELETE` | `auth.uid() = user_id` |
+
+<Info>
+  The SELECT policy is intentionally bi-directional. Both the person who sent a friend request and the person who received one can see the row. This is what allows each user to build their list of friends from a single query.
+</Info>
+
+<Warning>
+  There is no UPDATE policy. To change a friendship record, delete and re-insert it.
+</Warning>
+
+## Indexes
+
+```sql
+-- Speeds up "find all friends of user X" queries
+CREATE INDEX IF NOT EXISTS idx_friendships_user_id   ON friendships(user_id);
+
+-- Speeds up "find all users who added user X" queries
+CREATE INDEX IF NOT EXISTS idx_friendships_friend_id ON friendships(friend_id);
+```
+
+## weekly_rankings view
+
+The `weekly_rankings` view aggregates each user's activity emissions for the current ISO week and ranks all users from lowest to highest emissions. A lower rank means fewer emissions — rank 1 is the best performer.
+
+```sql
+CREATE OR REPLACE VIEW weekly_rankings AS
+SELECT
+  p.id,
+  p.name         AS full_name,
+  p.friend_code,
+  COALESCE(SUM(a.emissions), 0) AS weekly_emissions,
+  COUNT(a.id)                   AS activity_count,
+  RANK() OVER (
+    ORDER BY COALESCE(SUM(a.emissions), 0) ASC
+  ) AS rank
+FROM profiles p
+LEFT JOIN activities a
+  ON  p.id = a.user_id
+  AND a.created_at >= date_trunc('week', CURRENT_TIMESTAMP)
+  AND a.created_at <  date_trunc('week', CURRENT_TIMESTAMP) + INTERVAL '1 week'
+GROUP BY p.id, p.name, p.friend_code;
+```
+
+### View columns
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | `uuid` | User's profile ID. |
+| `full_name` | `text` | User's display name from `profiles.name`. |
+| `friend_code` | `varchar(8)` | User's friend code, used to look up specific users. |
+| `weekly_emissions` | `numeric` | Total kg CO₂e logged this week. `0` if no activities were logged. |
+| `activity_count` | `bigint` | Number of individual activities logged this week. |
+| `rank` | `bigint` | Ordinal rank across all users, ordered ascending by `weekly_emissions`. Ties share the same rank. |
+
+<Note>
+  The week boundary uses `date_trunc('week', CURRENT_TIMESTAMP)`, which truncates to Monday 00:00 UTC in PostgreSQL's default locale. All users with zero logged activities still appear in the view with `weekly_emissions = 0` and share rank 1 with each other.
+</Note>
+
+## Usage examples
+
+### Adding a friend by friend code
+
+```typescript
+// 1. Look up the friend's profile ID from their code
+const { data: friendProfile } = await supabase
+  .from("profiles")
+  .select("id")
+  .eq("friend_code", enteredCode.toUpperCase())
+  .single()
+
+// 2. Insert the friendship row
+const { error } = await supabase
+  .from("friendships")
+  .insert({
+    user_id: currentUserId,
+    friend_id: friendProfile.id,
+  })
+```
+
+### Querying the weekly leaderboard for a user's friend group
+
+```typescript
+// 1. Collect the IDs of all friends
+const { data: friendships } = await supabase
+  .from("friendships")
+  .select("user_id, friend_id")
+
+const friendIds = friendships?.map(f =>
+  f.user_id === currentUserId ? f.friend_id : f.user_id
+) ?? []
+
+// 2. Include the current user and fetch their rankings
+const participantIds = [currentUserId, ...friendIds]
+
+const { data: rankings } = await supabase
+  .from("weekly_rankings")
+  .select("*")
+  .in("id", participantIds)
+  .order("rank", { ascending: true })
+```
+
+<Tip>
+  Rank values from the view are computed across **all** users, not just friends. When displaying a friend-group leaderboard, re-sort or re-rank the filtered subset on the client side if you need a local rank within the group.
+</Tip>

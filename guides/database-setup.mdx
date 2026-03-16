@@ -1,0 +1,198 @@
+---
+title: "Database setup"
+description: "Create a Supabase project and run the Carbon Tracker migration scripts."
+---
+
+Carbon Tracker uses [Supabase](https://supabase.com) as its backend — a hosted Postgres database with built-in authentication and row-level security.
+
+## Create a Supabase project
+
+<Steps>
+  <Step title="Sign in to Supabase">
+    Go to [supabase.com](https://supabase.com) and sign in or create a free account.
+  </Step>
+
+  <Step title="Create a new project">
+    Click **New project**, choose an organisation, enter a project name, set a strong database password, and select a region close to your users.
+
+    Wait about 60 seconds for the project to provision.
+  </Step>
+
+  <Step title="Copy your credentials">
+    In your project dashboard, go to **Settings → API**. Copy:
+
+    - **Project URL** — paste this as `NEXT_PUBLIC_SUPABASE_URL` in `.env.local`
+    - **anon public key** — paste this as `NEXT_PUBLIC_SUPABASE_ANON_KEY` in `.env.local`
+  </Step>
+
+  <Step title="Open the SQL editor">
+    In the left sidebar, click **SQL editor**. You will run each migration script here in order.
+  </Step>
+
+  <Step title="Run migration 001 — profiles table">
+    Paste the contents of `scripts/001_create_profiles.sql` into the editor and click **Run**.
+
+    ```sql
+    create table if not exists public.profiles (
+      id uuid primary key references auth.users(id) on delete cascade,
+      name text not null,
+      email text not null,
+      created_at timestamptz default now()
+    );
+
+    alter table public.profiles enable row level security;
+
+    create policy "profiles_select_own" on public.profiles
+      for select using (auth.uid() = id);
+
+    create policy "profiles_insert_own" on public.profiles
+      for insert with check (auth.uid() = id);
+
+    create policy "profiles_update_own" on public.profiles
+      for update using (auth.uid() = id);
+
+    create policy "profiles_delete_own" on public.profiles
+      for delete using (auth.uid() = id);
+    ```
+
+    This creates the `profiles` table — one row per user — and enables row-level security so users can only access their own profile.
+  </Step>
+
+  <Step title="Run migration 002 — activities table">
+    Paste and run `scripts/002_create_activities.sql`:
+
+    ```sql
+    create table if not exists public.activities (
+      id uuid primary key default gen_random_uuid(),
+      user_id uuid not null references public.profiles(id) on delete cascade,
+      type text not null,
+      name text not null,
+      emissions numeric not null default 0,
+      details jsonb,
+      created_at timestamptz default now()
+    );
+
+    alter table public.activities enable row level security;
+
+    create policy "activities_select_own" on public.activities
+      for select using (auth.uid() = user_id);
+
+    create policy "activities_insert_own" on public.activities
+      for insert with check (auth.uid() = user_id);
+
+    create policy "activities_update_own" on public.activities
+      for update using (auth.uid() = user_id);
+
+    create policy "activities_delete_own" on public.activities
+      for delete using (auth.uid() = user_id);
+    ```
+
+    Each activity record stores the emission amount in kg CO2e, the activity type (`food` or `transport`), and any additional details as JSONB.
+  </Step>
+
+  <Step title="Run migration 003 — profile auto-creation trigger">
+    Paste and run `scripts/003_profile_trigger.sql`:
+
+    ```sql
+    create or replace function public.handle_new_user()
+    returns trigger as $$
+    begin
+      insert into public.profiles (id, name, email)
+      values (
+        new.id,
+        coalesce(new.raw_user_meta_data->>'name', split_part(new.email, '@', 1)),
+        new.email
+      );
+      return new;
+    end;
+    $$ language plpgsql security definer;
+
+    create or replace trigger on_auth_user_created
+      after insert on auth.users
+      for each row execute procedure public.handle_new_user();
+    ```
+
+    <Note>
+      This trigger fires automatically whenever a new user signs up via Supabase Auth. It creates the corresponding `profiles` row so the rest of the app can safely query user data without a separate onboarding step.
+    </Note>
+  </Step>
+
+  <Step title="Run migration 004 — friends and weekly rankings">
+    Paste and run `scripts/004_create_friends_ranking.sql`:
+
+    ```sql
+    ALTER TABLE profiles ADD COLUMN IF NOT EXISTS friend_code VARCHAR(8) UNIQUE;
+
+    CREATE OR REPLACE FUNCTION generate_friend_code()
+    RETURNS VARCHAR(8) AS $$
+    DECLARE
+      chars TEXT := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      result VARCHAR(8) := '';
+      i INTEGER;
+    BEGIN
+      FOR i IN 1..8 LOOP
+        result := result || substr(chars, floor(random() * length(chars) + 1)::integer, 1);
+      END LOOP;
+      RETURN result;
+    END;
+    $$ LANGUAGE plpgsql;
+
+    CREATE TABLE IF NOT EXISTS friendships (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+      friend_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(user_id, friend_id)
+    );
+
+    CREATE OR REPLACE VIEW weekly_rankings AS
+    SELECT
+      p.id,
+      p.name as full_name,
+      p.friend_code,
+      COALESCE(SUM(a.emissions), 0) as weekly_emissions,
+      COUNT(a.id) as activity_count,
+      RANK() OVER (ORDER BY COALESCE(SUM(a.emissions), 0) ASC) as rank
+    FROM profiles p
+    LEFT JOIN activities a ON p.id = a.user_id
+      AND a.created_at >= date_trunc('week', CURRENT_TIMESTAMP)
+      AND a.created_at < date_trunc('week', CURRENT_TIMESTAMP) + INTERVAL '1 week'
+    GROUP BY p.id, p.name, p.friend_code;
+    ```
+  </Step>
+</Steps>
+
+## What each migration creates
+
+| Script | Creates | Purpose |
+|--------|---------|----------|
+| `001_create_profiles.sql` | `profiles` table | Stores user name and email, linked to `auth.users` |
+| `002_create_activities.sql` | `activities` table | Stores individual carbon activity logs per user |
+| `003_profile_trigger.sql` | `on_auth_user_created` trigger | Auto-creates a profile row on new signup |
+| `004_create_friends_ranking.sql` | `friendships` table, `weekly_rankings` view, `generate_friend_code` function | Enables the social leaderboard feature |
+
+## Row-level security
+
+<Note>
+  All tables have row-level security (RLS) enabled. RLS policies are enforced at the database level — not just the application layer — so users can only read or modify their own rows even if they craft a direct API request with the anon key.
+
+  Each table follows the same pattern: `auth.uid() = <owner_column>`. Supabase evaluates this on every query before returning any data.
+</Note>
+
+## The `weekly_rankings` view
+
+The `weekly_rankings` view aggregates each user's total emissions for the current calendar week using `date_trunc('week', CURRENT_TIMESTAMP)`. It uses the `RANK()` window function ordered by emissions **ascending** — lower emissions earn a better (lower) rank number.
+
+The view is read-only and recomputes dynamically on every query, so rankings always reflect the latest activity data.
+
+## Friend codes
+
+The `generate_friend_code()` function creates a random 8-character code using an unambiguous character set (no `O`, `0`, `1`, `I` to avoid confusion). Codes are stored in the `friend_code` column on `profiles` and must be unique across all users.
+
+To generate and assign a code for an existing user:
+
+```sql
+UPDATE profiles
+SET friend_code = generate_friend_code()
+WHERE friend_code IS NULL;
+```

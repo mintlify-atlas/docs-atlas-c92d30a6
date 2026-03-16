@@ -1,0 +1,94 @@
+---
+title: "Log transport"
+description: "Record the emissions from a journey by selecting a transport mode and entering the distance travelled in kilometres."
+---
+
+The **Transporte** screen lets you log the CO2e emissions from any journey. Select how you travelled, enter the distance in kilometres, and the app calculates and saves the result. Walking and cycling always register as zero emissions.
+
+## How to log a journey
+
+<Steps>
+  <Step title="Open the transport log">
+    From the dashboard, tap the **Transporte** button. This navigates to `/log-transport`.
+  </Step>
+  <Step title="Select a transport mode">
+    Tap the mode that matches your journey. Six modes are available: **Car**, **Moto**, **Taxi**, **Bus**, **Caminar**, and **Bicicleta**.
+  </Step>
+  <Step title="Enter the distance in kilometres">
+    Type the distance of your journey in the distance field (e.g. `12.5` for a 12.5 km trip).
+  </Step>
+  <Step title="Review the comparison">
+    The screen shows how your chosen mode compares to the bus average for the same distance.
+  </Step>
+  <Step title="Tap Registrar actividad">
+    Press **Registrar actividad** to save the entry. Emissions are calculated, the activity is written to your history, and the dashboard totals are updated.
+  </Step>
+</Steps>
+
+## Emission calculation
+
+Each transport mode has a fixed emission factor in **kg CO2e per kilometre**. The formula is:
+
+```
+emissions (kg CO2e) = emissionFactor × distanceKm
+```
+
+**Example:** A 20 km car journey:
+
+```
+0.192 × 20 = 3.84 kg CO2e
+```
+
+## Transport modes and emission factors
+
+| Mode | Emission factor | Notes |
+|---|---|---|
+| Car | 0.192 kg CO2e/km | Average passenger car |
+| Moto | 0.113 kg CO2e/km | Motorbike / scooter |
+| Taxi | 0.210 kg CO2e/km | Includes deadhead miles |
+| Bus | 0.089 kg CO2e/km | City bus, average occupancy |
+| Caminar | 0 kg CO2e/km | Zero emissions |
+| Bicicleta | 0 kg CO2e/km | Zero emissions |
+
+<Tip>
+  Bus is the lowest-emission motorised option. Replacing a short car or taxi journey with the bus cuts per-km emissions by more than 50%.
+</Tip>
+
+## Comparison vs bus
+
+After selecting a mode and distance, the screen displays a comparison against the bus average for the same trip. This helps you see the relative impact of your travel choice at a glance.
+
+<Tabs>
+  <Tab title="Car vs bus">
+    A 10 km car journey produces **1.92 kg CO2e**, while the same trip by bus produces **0.89 kg CO2e** — a saving of **1.03 kg CO2e** (54%).
+  </Tab>
+  <Tab title="Taxi vs bus">
+    A 10 km taxi journey produces **2.10 kg CO2e**, while the same trip by bus produces **0.89 kg CO2e** — a saving of **1.21 kg CO2e** (58%).
+  </Tab>
+  <Tab title="Moto vs bus">
+    A 10 km moto journey produces **1.13 kg CO2e**, while the same trip by bus produces **0.89 kg CO2e** — a saving of **0.24 kg CO2e** (21%).
+  </Tab>
+  <Tab title="Walk or cycle">
+    Both produce **0 kg CO2e** for any distance — better than any motorised option.
+  </Tab>
+</Tabs>
+
+<Note>
+  The `getTransportComparison()` and `getTransportEfficiency()` functions in `lib/carbon-data.ts` power the comparison text shown on screen.
+</Note>
+
+## Data saved
+
+After tapping **Registrar actividad**, the following `ActivityEntry` is created and persisted via `addActivity()`:
+
+| Field | Value |
+|---|---|
+| `type` | `"transport"` |
+| `name` | Transport mode label |
+| `emissions` | Calculated kg CO2e |
+| `timestamp` | ISO 8601 string of the log time |
+| `details` | Distance in km (optional detail string) |
+
+<Warning>
+  Logged activities cannot be edited. If you made a mistake with the distance or mode, simply ignore the incorrect entry in your history.
+</Warning>

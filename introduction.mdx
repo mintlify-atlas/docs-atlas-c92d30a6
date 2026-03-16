@@ -1,0 +1,83 @@
+---
+title: "Introduction"
+description: "Carbon Tracker helps you measure and reduce your daily carbon footprint by logging food and transport activities."
+---
+
+## What is Carbon Tracker?
+
+Carbon Tracker is a mobile-first web application that lets you log everyday activities — what you eat and how you travel — and instantly see their CO2 equivalent emissions. By making your carbon impact visible, Carbon Tracker helps you make greener choices day by day.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Set up your account and log your first activity in minutes
+  </Card>
+  <Card title="Dashboard" icon="chart-line" href="/features/dashboard">
+    See your daily and weekly emissions at a glance
+  </Card>
+  <Card title="Log Food" icon="utensils" href="/features/log-food">
+    Track the carbon footprint of your meals
+  </Card>
+  <Card title="Log Transport" icon="bus" href="/features/log-transport">
+    Record trips and see your travel emissions
+  </Card>
+  <Card title="Rankings" icon="trophy" href="/features/ranking">
+    Compete with friends on weekly emissions
+  </Card>
+  <Card title="Carbon Calculations" icon="calculator" href="/guides/carbon-calculations">
+    Understand how emissions are calculated
+  </Card>
+</CardGroup>
+
+## Key features
+
+<AccordionGroup>
+  <Accordion title="Daily emissions dashboard">
+    A visual ring indicator shows your total CO2 equivalent emissions for the current day. Compare against yesterday and spot your weekly trend with a 7-day bar chart.
+  </Accordion>
+  <Accordion title="Food carbon tracking">
+    Choose from 35+ food items — from beef and cheese to lentils and bananas — enter the quantity in grams, and Carbon Tracker calculates kg CO2e using peer-reviewed emission factors.
+  </Accordion>
+  <Accordion title="Transport tracking">
+    Log any trip by selecting a transport mode (car, bus, motorcycle, taxi, walking, cycling) and entering the distance in kilometres. Zero-emission modes are recognised automatically.
+  </Accordion>
+  <Accordion title="Social weekly rankings">
+    Share your unique friend code, add friends, and compete on a weekly leaderboard. Lower emissions rank higher. The leaderboard resets every Monday.
+  </Accordion>
+  <Accordion title="Personalised eco-tips">
+    Receive a daily environmental tip calibrated to your current emission level — motivational tips when you're doing well, and targeted food/transport advice when emissions are high.
+  </Accordion>
+  <Accordion title="Full activity history">
+    Every logged activity is stored in Supabase. Browse your complete history, filtered by day, to review past behaviour.
+  </Accordion>
+</AccordionGroup>
+
+## How it works
+
+<Steps>
+  <Step title="Create an account">
+    Register with your name, email, and password. A confirmation email is sent via Supabase Auth.
+  </Step>
+  <Step title="Log activities">
+    From the dashboard, tap **Alimentos** to log a meal or **Transporte** to log a trip. Each entry is saved to your activity history instantly.
+  </Step>
+  <Step title="Track your progress">
+    The dashboard shows today's total emissions, a comparison to yesterday, and a 7-day weekly chart.
+  </Step>
+  <Step title="Challenge friends">
+    Share your friend code and add others. The weekly ranking shows who in your group emits the least CO2.
+  </Step>
+</Steps>
+
+## Tech stack
+
+Carbon Tracker is built on modern, open-source technologies:
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript 5.7 |
+| Styling | Tailwind CSS v4 |
+| UI components | Radix UI + shadcn/ui |
+| Backend & Auth | Supabase (PostgreSQL + Auth) |
+| Charts | Recharts |
+| Form validation | React Hook Form + Zod |

@@ -1,0 +1,120 @@
+---
+title: "Schema: profiles"
+description: "Database schema reference for the profiles table, including columns, RLS policies, triggers, and the friend code system."
+---
+
+The `profiles` table stores one row per authenticated user. It extends Supabase's built-in `auth.users` table with application-level fields and is the anchor for all user data in Carbon Tracker.
+
+## CREATE TABLE
+
+```sql
+create table if not exists public.profiles (
+  id          uuid        primary key references auth.users(id) on delete cascade,
+  name        text        not null,
+  email       text        not null,
+  friend_code varchar(8)  unique,
+  created_at  timestamptz default now()
+);
+```
+
+## Columns
+
+<ResponseField name="id" type="uuid" required>
+  Primary key. Matches `auth.users.id` exactly — the profile row is tied to the auth user and is deleted automatically when the auth user is deleted (`ON DELETE CASCADE`).
+</ResponseField>
+
+<ResponseField name="name" type="text" required>
+  Display name entered by the user during onboarding. Not null.
+</ResponseField>
+
+<ResponseField name="email" type="text" required>
+  User's email address. Copied from the auth record at signup for convenience. Not null.
+</ResponseField>
+
+<ResponseField name="friend_code" type="varchar(8)">
+  Short unique code used to add friends without sharing a full user ID or email address. Generated automatically on profile creation. Unique across all profiles.
+</ResponseField>
+
+<ResponseField name="created_at" type="timestamptz">
+  Timestamp of profile creation. Defaults to `now()` at insert time.
+</ResponseField>
+
+## Row-level security (RLS)
+
+RLS is enabled on `profiles`. All policies use `auth.uid() = id` to restrict access strictly to the owner of the row.
+
+| Policy | Operation | Expression |
+|--------|-----------|------------|
+| Users can view their own profile | `SELECT` | `auth.uid() = id` |
+| Users can insert their own profile | `INSERT` | `auth.uid() = id` |
+| Users can update their own profile | `UPDATE` | `auth.uid() = id` |
+| Users can delete their own profile | `DELETE` | `auth.uid() = id` |
+
+<Warning>
+  There is no public read access to profiles. Leaderboard and friend features access profile data through the `weekly_rankings` view and the `friendships` table, each with their own policies.
+</Warning>
+
+## Friend code generation
+
+Friend codes are 8-character uppercase alphanumeric strings. They are generated at profile creation by a PostgreSQL function and assigned to the `friend_code` column. The `UNIQUE` constraint on the column ensures no two users share a code.
+
+```sql
+create or replace function generate_friend_code()
+returns text
+language plpgsql
+as $$
+declare
+  chars text := 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  result text := '';
+  i int;
+begin
+  for i in 1..8 loop
+    result := result || substr(chars, floor(random() * length(chars) + 1)::int, 1);
+  end loop;
+  return result;
+end;
+$$;
+```
+
+## Profile creation trigger
+
+A database trigger automatically creates a `profiles` row whenever a new user signs up via Supabase Auth. This avoids the need for client-side profile creation logic.
+
+```sql
+create or replace function handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+begin
+  insert into public.profiles (id, name, email, friend_code)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'name', 'User'),
+    new.email,
+    generate_friend_code()
+  );
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure handle_new_user();
+```
+
+<Info>
+  The trigger uses `SECURITY DEFINER` so it can write to `public.profiles` during signup, before the user's own RLS policies apply.
+</Info>
+
+## Example profile row
+
+```json
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "name": "María García",
+  "email": "maria@example.com",
+  "friend_code": "XK7M2QP9",
+  "created_at": "2025-03-01T10:22:00+00:00"
+}
+```

@@ -1,0 +1,84 @@
+---
+title: "Log food"
+description: "Record the carbon footprint of a meal or ingredient by selecting a food item and entering the weight in grams."
+---
+
+The **Alimentos** screen lets you log the CO2e emissions from anything you eat. You choose a food item from the built-in database, enter the weight you consumed in grams, and the app calculates and saves the result.
+
+## How to log a food item
+
+<Steps>
+  <Step title="Open the food log">
+    From the dashboard, tap the **Alimentos** button. This navigates to `/log-food`.
+  </Step>
+  <Step title="Search or select a food">
+    Use the search field to filter items by name, or scroll through the list. The database contains 35+ items across multiple food categories.
+  </Step>
+  <Step title="Enter the weight in grams">
+    Type the amount you consumed in the weight field. The value must be a positive number in grams (e.g. `150` for 150 g of chicken breast).
+  </Step>
+  <Step title="Tap Registrar actividad">
+    Press **Registrar actividad** to save the entry. The app calculates emissions, writes the activity to your history, and updates the dashboard totals.
+  </Step>
+</Steps>
+
+## Emission calculation
+
+Every food item in the database has a pre-defined emission factor expressed in **kg CO2e per kilogram of food**. The formula applied is:
+
+```
+emissions (kg CO2e) = (emissionFactor × grams) / 1000
+```
+
+**Example:** Beef has an emission factor of approximately 27 kg CO2e/kg. Logging 200 g gives:
+
+```
+(27 × 200) / 1000 = 5.40 kg CO2e
+```
+
+The result is stored on the `ActivityEntry` object as the `emissions` field (a number in kg CO2e).
+
+<Info>
+  Emission factors are sourced from lifecycle assessment data and represent the full supply-chain footprint of each food, including agriculture, processing, and transport to market.
+</Info>
+
+## Food categories
+
+The FOOD_DATABASE covers a wide range of everyday items grouped by category:
+
+<AccordionGroup>
+  <Accordion title="Carnes y proteínas animales">
+    Includes beef, pork, chicken, lamb, turkey, and eggs. These items tend to carry the highest emission factors due to land use and methane from livestock.
+  </Accordion>
+  <Accordion title="Lácteos">
+    Includes cow's milk, cheese, butter, and yogurt. Dairy production generates significant methane and nitrous oxide emissions.
+  </Accordion>
+  <Accordion title="Pescados y mariscos">
+    Includes salmon, tuna, shrimp, and other common seafood. Emission factors vary significantly by fishing or farming method.
+  </Accordion>
+  <Accordion title="Cereales y legumbres">
+    Includes rice, wheat bread, oats, lentils, chickpeas, and tofu. Plant-based staples generally have the lowest emission factors.
+  </Accordion>
+  <Accordion title="Frutas y verduras">
+    Includes a variety of fresh produce. Seasonal and locally grown options typically carry lower emissions than out-of-season or imported equivalents.
+  </Accordion>
+  <Accordion title="Bebidas">
+    Includes coffee, beer, wine, and soft drinks. Processing and packaging contribute the most to beverage emissions.
+  </Accordion>
+</AccordionGroup>
+
+## Data saved
+
+After you tap **Registrar actividad**, the following `ActivityEntry` is created and persisted via `addActivity()`:
+
+| Field | Value |
+|---|---|
+| `type` | `"food"` |
+| `name` | Selected food item name |
+| `emissions` | Calculated kg CO2e |
+| `timestamp` | ISO 8601 string of the log time |
+| `details` | Weight in grams (optional detail string) |
+
+<Warning>
+  There is no edit function for logged activities. If you enter the wrong weight, log the corrected entry and disregard the incorrect one in your history.
+</Warning>

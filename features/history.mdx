@@ -1,0 +1,91 @@
+---
+title: "Activity history"
+description: "Browse your complete log of all food and transport activities, with emissions, timestamps, and type labels for every entry."
+---
+
+The **Historial** screen is your full activity log. Unlike the dashboard, which shows only the five most recent entries, the history screen lists every activity you have ever logged — in chronological order, newest first.
+
+## What each entry shows
+
+Every row in the history list contains the following information:
+
+<Columns cols={2}>
+  <Card title="Icon" icon="image">
+    A food or transport icon that lets you identify the entry type at a glance without reading the badge.
+  </Card>
+  <Card title="Name" icon="tag">
+    The name of the food item or transport mode exactly as it was logged (e.g. *Pollo a la plancha* or *Bus*).
+  </Card>
+  <Card title="Date and time" icon="clock">
+    The full timestamp of when the activity was recorded, shown as a human-readable date and time.
+  </Card>
+  <Card title="Emissions" icon="cloud">
+    The calculated carbon footprint in kg CO2e, rounded to two decimal places.
+  </Card>
+</Columns>
+
+Each entry also carries a **type badge** — either `food` or `transport` — displayed as a colour-coded pill.
+
+## Browsing your history
+
+<Steps>
+  <Step title="Navigate to Historial">
+    Tap the history icon in the bottom navigation bar, or navigate directly to `/historial`.
+  </Step>
+  <Step title="Scroll through entries">
+    Entries are listed chronologically, newest at the top. Scroll down to go further back in time.
+  </Step>
+  <Step title="Identify entries by icon and badge">
+    Use the food icon (<Icon icon="utensils" size={16} />) and transport icon (<Icon icon="car" size={16} />) alongside the type badge to quickly distinguish between the two activity types.
+  </Step>
+</Steps>
+
+## Entry data structure
+
+Each history entry maps directly to an `ActivityEntry` from `lib/app-context.tsx`:
+
+```typescript
+interface ActivityEntry {
+  id: string        // Unique identifier (UUID)
+  type: ActivityType  // "food" | "transport"
+  name: string      // Display name of the item or mode
+  emissions: number // kg CO2e
+  timestamp: string // ISO 8601 datetime string
+  details?: string  // Optional: grams for food, km for transport
+}
+```
+
+<Info>
+  The `details` field is optional. When present, it stores the raw input used in the calculation — weight in grams for food entries, or distance in km for transport entries.
+</Info>
+
+## Understanding your totals
+
+The history screen shows every individual entry but does not display aggregate totals by day or category. To see daily totals and weekly trends, return to the [Dashboard](/features/dashboard).
+
+<Tip>
+  If you notice an incorrect entry, you cannot edit or delete it from the history screen. Log a corrected entry and use your weekly chart on the dashboard to track your actual trend over time.
+</Tip>
+
+## Food vs transport entries
+
+<Tabs>
+  <Tab title="Food entries">
+    Food entries display the selected item name (e.g. *Arroz*, *Carne de res*, *Lentejas*), the timestamp, and the emissions calculated from the weight entered in grams.
+
+    The emission factor used is:
+    ```
+    emissions = (emissionFactor × grams) / 1000
+    ```
+  </Tab>
+  <Tab title="Transport entries">
+    Transport entries display the mode name (e.g. *Car*, *Bus*, *Bicicleta*), the timestamp, and the emissions calculated from the distance entered in km.
+
+    The emission factor used is:
+    ```
+    emissions = emissionFactor × distanceKm
+    ```
+
+    Walk and cycle entries always show **0.00 kg CO2e**.
+  </Tab>
+</Tabs>

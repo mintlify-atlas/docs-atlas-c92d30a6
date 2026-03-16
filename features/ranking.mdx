@@ -1,0 +1,90 @@
+---
+title: "Weekly ranking"
+description: "Compare your weekly carbon footprint against friends, find your friend code, add contacts, and see how the leaderboard resets each Monday."
+---
+
+The **Ranking Semanal** screen lets you see how your weekly emissions compare to friends. The lower your total, the higher your position. Rankings reset every Monday morning.
+
+## How the leaderboard works
+
+Every user has a weekly emission total that accumulates from all food and transport activities logged during the current Monday–Sunday week. Users are sorted in **ascending order** — the person with the fewest kg CO2e is ranked first.
+
+<Columns cols={2}>
+  <Card title="1st place" icon="crown">
+    Shown with a crown icon. The friend with the lowest weekly emissions.
+  </Card>
+  <Card title="2nd place" icon="medal">
+    Shown with a silver medal icon.
+  </Card>
+  <Card title="3rd place" icon="medal">
+    Shown with a bronze medal icon.
+  </Card>
+  <Card title="All others" icon="list-ol">
+    Listed by rank number below the podium positions.
+  </Card>
+</Columns>
+
+Your own entry is always visible in the list alongside your friends, so you can see exactly where you stand.
+
+## Finding your friend code
+
+Your **Tu codigo de amigo** is an 8-character alphanumeric code that uniquely identifies you on the rankings system. Share it with people you want to compare against.
+
+<Steps>
+  <Step title="Open the ranking screen">
+    Tap the ranking icon in the bottom navigation bar, or navigate to `/ranking`.
+  </Step>
+  <Step title="Locate Tu codigo de amigo">
+    Your unique 8-character code is displayed near the top of the screen under the heading **Tu codigo de amigo**.
+  </Step>
+  <Step title="Copy the code">
+    Tap the **Copy** button next to the code. The code is copied to your clipboard and ready to share via any messaging app.
+  </Step>
+</Steps>
+
+<Note>
+  Your friend code never changes. You can share it at any time without creating a new one.
+</Note>
+
+## Adding a friend
+
+<Steps>
+  <Step title="Get a friend's code">
+    Ask the person you want to add to share their 8-character **Tu codigo de amigo** with you.
+  </Step>
+  <Step title="Enter the code in Agregar amigo">
+    On the ranking screen, find the **Agregar amigo** section and type or paste their code into the input field.
+  </Step>
+  <Step title="Confirm the addition">
+    Submit the form. If the code is valid, the friend is added to your leaderboard immediately and their weekly total appears in the rankings list.
+  </Step>
+</Steps>
+
+<Warning>
+  If the code you enter does not match any registered user, the addition will fail. Double-check the code with your friend and try again.
+</Warning>
+
+## Weekly reset
+
+The **Ranking Semanal** resets automatically every **Monday at midnight**. After the reset:
+
+- All weekly emission totals return to 0 kg CO2e
+- Rankings are recalculated from scratch for the new week
+- The week range displayed (Mon – Sun) updates to the current week
+
+<Info>
+  Past week results are not stored or accessible after the reset. The leaderboard always reflects only the current week.
+</Info>
+
+## Week range display
+
+The screen shows the active week range in **Monday – Sunday** format (e.g. *10 mar – 16 mar*) so you always know which period the rankings cover.
+
+## Rankings data
+
+The leaderboard is built from the `weekly_emissions` field stored in Supabase for each user. The list includes:
+
+- Yourself
+- All friends you have added via **Agregar amigo**
+
+Friends are sorted by `weekly_emissions ASC` — lower is better.

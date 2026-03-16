@@ -1,0 +1,140 @@
+---
+title: "How carbon calculations work"
+description: "Understand the emission factors and formulas behind Carbon Tracker's kg CO2e figures."
+---
+
+Carbon Tracker converts real-world actions — eating food, travelling — into a single comparable number: **kilograms of CO2 equivalent** (kg CO2e). This guide explains what that unit means, how the formulas work, and where the numbers come from.
+
+## What is kg CO2e?
+
+kg CO2e (kilograms of carbon dioxide equivalent) is the standard unit for expressing greenhouse gas emissions. Because different gases warm the planet at different rates, scientists convert them all to an equivalent amount of CO2 using each gas's **global warming potential** (GWP). The result is a single, comparable figure.
+
+For example:
+- 1 kg of methane ≈ 27–30 kg CO2e (over 100 years)
+- 1 kg of nitrous oxide ≈ 273 kg CO2e
+
+Emission factors in Carbon Tracker already incorporate these conversions, so you always work with a single kg CO2e value per activity.
+
+## Food emissions
+
+### Formula
+
+```
+emissions (kg CO2e) = (emissionFactor × gramsConsumed) / 1000
+```
+
+`emissionFactor` is expressed in **kg CO2e per kilogram of food**. Dividing by 1000 converts grams to kilograms.
+
+### Implementation
+
+```typescript
+export function calculateFoodEmissions(foodId: string, gramsConsumed: number): number {
+  const food = FOOD_DATABASE.find((f) => f.id === foodId)
+  if (!food) return 0
+  return Number(((food.emissionFactor * gramsConsumed) / 1000).toFixed(2))
+}
+```
+
+The result is rounded to two decimal places.
+
+### Worked example
+
+> **200 g of beef**
+>
+> `(27.0 × 200) / 1000 = 5.4 kg CO2e`
+
+> **150 g of chicken**
+>
+> `(6.9 × 150) / 1000 = 1.035 → 1.04 kg CO2e`
+
+> **300 g of lentils**
+>
+> `(0.9 × 300) / 1000 = 0.27 kg CO2e`
+
+### Food emission factors
+
+These factors represent lifecycle emissions including land use, farming, processing, and transport to market.
+
+| Food | Emission factor (kg CO2e / kg) | Relative intensity |
+|------|-------------------------------|--------------------|
+| Beef | 27.0 | Very high |
+| Lamb | 24.0 | Very high |
+| Cheese | 13.5 | High |
+| Pork | 12.1 | High |
+| Chicken | 6.9 | Medium |
+| Rice | 4.0 | Medium |
+| Lentils | 0.9 | Low |
+| Vegetables | 0.4–1.4 | Very low |
+
+<Tip>
+  Swapping beef for chicken or lentils in a single meal can reduce that meal's footprint by 75–95%. Even small, regular substitutions accumulate into meaningful reductions over a week.
+</Tip>
+
+## Transport emissions
+
+### Formula
+
+```
+emissions (kg CO2e) = emissionFactor × distanceKm
+```
+
+`emissionFactor` is expressed in **kg CO2e per kilometre**.
+
+### Implementation
+
+```typescript
+export function calculateTransportEmissions(modeId: string, distanceKm: number): number {
+  const mode = TRANSPORT_MODES.find((m) => m.id === modeId)
+  if (!mode) return 0
+  return Number((mode.emissionFactor * distanceKm).toFixed(2))
+}
+```
+
+### Worked example
+
+> **10 km by car**
+>
+> `0.192 × 10 = 1.92 kg CO2e`
+
+> **10 km by bus**
+>
+> `0.089 × 10 = 0.89 kg CO2e`
+
+> **10 km by bicycle or on foot**
+>
+> `0.0 × 10 = 0 kg CO2e`
+
+### Transport emission factors
+
+Factors represent average per-passenger emissions including vehicle manufacture and fuel/energy production.
+
+| Mode | Emission factor (kg CO2e / km) | Notes |
+|------|-------------------------------|-------|
+| Taxi | 0.210 | Higher than private car due to empty return trips |
+| Car | 0.192 | Assumes average occupancy (~1.5 passengers) |
+| Motorcycle | 0.113 | Lower engine displacement than car |
+| Bus | 0.089 | Divided across average passenger load |
+| Walking | 0 | Zero operational emissions |
+| Cycling | 0 | Zero operational emissions |
+
+<Tip>
+  Replacing a 5 km daily car commute with cycling saves roughly `0.192 × 5 × 260 ≈ 250 kg CO2e` per year — equivalent to about 10 kg of beef.
+</Tip>
+
+## Why lower emissions = better ranking
+
+The `weekly_rankings` view sorts users by `weekly_emissions` **ascending**: the user with the fewest kg CO2e logged that week earns rank 1. This design encourages users to reduce their footprint rather than log fewer activities.
+
+A user who logs all their activities honestly — including high-emission ones — benefits from the accuracy of the data and can track genuine improvement week-on-week.
+
+## About the emission factors
+
+The emission factors used in Carbon Tracker are based on peer-reviewed data and widely cited references, including:
+
+- **IPCC AR6** (2021) lifecycle emission estimates for food categories
+- **Poore & Nemecek (2018)** — *Science*, "Reducing food's environmental impacts through producers and consumers" — the most comprehensive meta-analysis of food system emissions to date
+- **UK Department for Energy Security and Net Zero** conversion factors for transport modes
+
+<Note>
+  Emission factors are averages. Actual values vary by country, production method, season, and supply chain. The figures in Carbon Tracker are intentionally conservative (mid-range) estimates suitable for personal carbon awareness, not precise accounting.
+</Note>

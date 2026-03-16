@@ -1,0 +1,93 @@
+---
+title: "Dashboard"
+description: "Your home screen for daily carbon tracking — emissions ring, daily tip, quick log buttons, weekly chart, and recent activity."
+---
+
+The dashboard is the first screen you see after logging in. It gives you a real-time snapshot of your carbon footprint for the day and the past week.
+
+## Overview
+
+<Columns cols={2}>
+  <Card title="Emissions ring" icon="circle-dot">
+    A circular gauge showing today's total CO2e in kilograms, updated every time you log an activity.
+  </Card>
+  <Card title="Tip del dia" icon="leaf">
+    A personalized environmental tip based on your current emission level, refreshed each day.
+  </Card>
+  <Card title="Tendencia semanal" icon="chart-bar">
+    A 7-day bar chart (L M X J V S D) showing your daily emissions from Monday through Sunday.
+  </Card>
+  <Card title="Actividad reciente" icon="list">
+    Your last 5 logged activities with name, timestamp, emissions in kg, and a food or transport badge.
+  </Card>
+</Columns>
+
+## Greeting and time context
+
+The header greeting adapts to the time of day:
+
+| Time range | Greeting shown |
+|---|---|
+| 00:00 – 11:59 | Buenos dias |
+| 12:00 – 17:59 | Buenas tardes |
+| 18:00 – 23:59 | Buenas noches |
+
+## Emissions ring
+
+The **EmissionsRing** component at the top of the dashboard displays your cumulative CO2e for the current calendar day in kilograms. Below the ring you will see a percentage change relative to yesterday, accompanied by a trending-down icon when you are improving.
+
+<Note>
+  The ring resets to 0.00 kg at midnight each day. Emissions are calculated from all food and transport activities logged that day.
+</Note>
+
+## Tip del dia
+
+The **Tip del dia** card surfaces a contextual environmental tip. The tip content is selected based on your current emission level — lower emissions unlock different tips than higher ones. Tips rotate daily.
+
+<Tip>
+  Keep your daily emissions low to unlock positive reinforcement tips. Higher emission days surface tips focused on reduction strategies.
+</Tip>
+
+## Logging actions
+
+Two large buttons in the center of the dashboard let you quickly record a new activity:
+
+<Columns cols={2}>
+  <Card title="Alimentos" icon="utensils" href="/features/log-food">
+    Log a food item. Navigates to the food logging screen at `/log-food`.
+  </Card>
+  <Card title="Transporte" icon="car" href="/features/log-transport">
+    Log a journey. Navigates to the transport logging screen at `/log-transport`.
+  </Card>
+</Columns>
+
+## Tendencia semanal (weekly chart)
+
+The **Tendencia semanal** section displays a bar chart with one bar per day of the current week. Days are labelled with their Spanish abbreviations:
+
+| Label | Day |
+|---|---|
+| L | Lunes (Monday) |
+| M | Martes (Tuesday) |
+| X | Miércoles (Wednesday) |
+| J | Jueves (Thursday) |
+| V | Viernes (Friday) |
+| S | Sábado (Saturday) |
+| D | Domingo (Sunday) |
+
+The chart uses the last 7 days of logged data. Days with no logged activities show a zero-height bar.
+
+## Actividad reciente
+
+The **Actividad reciente** list shows your five most recently logged entries. Each row includes:
+
+- **Name** — the food item or transport mode
+- **Timestamp** — the date and time of logging
+- **Emissions** — the calculated value in kg CO2e
+- **Type badge** — color-coded label indicating `food` or `transport`
+
+To see your full history, navigate to [Historial](/features/history).
+
+## Logout
+
+A logout button is available in the top-right corner of the dashboard. Tapping it ends your session and returns you to the login screen.

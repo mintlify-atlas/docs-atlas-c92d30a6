@@ -1,0 +1,98 @@
+---
+title: "Local development setup"
+description: "Get Carbon Tracker running on your machine in a few minutes."
+---
+
+## Prerequisites
+
+Before you begin, make sure you have the following installed:
+
+- **Node.js 18 or later** — [nodejs.org](https://nodejs.org)
+- **npm** (bundled with Node.js) or **pnpm** — `npm install -g pnpm`
+- **Git** — [git-scm.com](https://git-scm.com)
+
+Verify your Node.js version:
+
+```bash
+node --version
+# v18.x.x or higher
+```
+
+## Setup
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/your-org/carbon-tracker.git
+    cd carbon-tracker
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    <CodeGroup>
+
+    ```bash npm
+    npm install
+    ```
+
+    ```bash pnpm
+    pnpm install
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Configure environment variables">
+    Create a `.env.local` file in the project root:
+
+    ```bash
+    cp .env.example .env.local
+    ```
+
+    Then open `.env.local` and fill in your Supabase credentials:
+
+    ```env .env.local
+    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+    ```
+
+    <Warning>
+      Never commit `.env.local` to version control. It contains credentials that grant access to your Supabase project. The file is already listed in `.gitignore`.
+    </Warning>
+  </Step>
+
+  <Step title="Run the development server">
+    <CodeGroup>
+
+    ```bash npm
+    npm run dev
+    ```
+
+    ```bash pnpm
+    pnpm dev
+    ```
+
+    </CodeGroup>
+
+    Open [http://localhost:3000](http://localhost:3000) in your browser. The page hot-reloads as you edit files.
+  </Step>
+</Steps>
+
+## Available scripts
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| Development server | `npm run dev` | Starts Next.js with hot reload at `localhost:3000` |
+| Production build | `npm run build` | Compiles and optimises the app for production |
+| Production server | `npm run start` | Serves the production build locally |
+| Lint | `npm run lint` | Runs ESLint across the codebase |
+
+## Demo Supabase instance vs self-hosting
+
+The project ships with a shared demo Supabase instance. This is convenient for quickly exploring the app, but the demo database is **read-only for non-authenticated users** and may be reset periodically.
+
+For real development work, create your own free Supabase project at [supabase.com](https://supabase.com) and run the migration scripts described in the [database setup guide](/guides/database-setup).
+
+<Note>
+  The `NEXT_PUBLIC_` prefix on both environment variables means they are embedded into the browser bundle at build time. They are safe to expose to the client — Supabase's row-level security policies enforce access control server-side regardless of who holds the anon key.
+</Note>

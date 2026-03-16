@@ -1,0 +1,77 @@
+---
+title: "Profile"
+description: "Manage your account settings — update your display name and change your password from the profile screen."
+---
+
+The **Perfil** screen is where you manage your account details. You can update your display name and change your password at any time. Your email address is shown for reference but cannot be changed from within the app.
+
+## Profile fields
+
+| Field | Editable | Notes |
+|---|---|---|
+| Display name | Yes | Shown throughout the app and on the ranking leaderboard |
+| Email address | No | Read-only; displayed for reference only |
+| Password | Yes | Requires your current password to confirm identity |
+
+## Updating your display name
+
+<Steps>
+  <Step title="Open the profile screen">
+    Tap the profile icon in the bottom navigation bar, or navigate to `/perfil`.
+  </Step>
+  <Step title="Edit the display name field">
+    Locate the display name input. Clear the current name and type your new one.
+  </Step>
+  <Step title="Save the changes">
+    Tap the save button. Your new display name is updated immediately across the app, including the ranking leaderboard.
+  </Step>
+</Steps>
+
+<Note>
+  Your display name is what other users see next to your emissions on the **Ranking Semanal** leaderboard. Choose a name your friends will recognise.
+</Note>
+
+## Changing your password
+
+Changing your password requires re-authentication with your current password before the new one is accepted. This protects your account if someone else has access to your unlocked device.
+
+<Steps>
+  <Step title="Locate the password section">
+    Scroll to the password section on the profile screen.
+  </Step>
+  <Step title="Enter your current password">
+    Type your existing password in the **Contraseña actual** field. This step is required for re-authentication.
+  </Step>
+  <Step title="Enter your new password">
+    Type the new password you want to use in the **Nueva contraseña** field.
+  </Step>
+  <Step title="Confirm and save">
+    Submit the form. Supabase re-authenticates with your current password before applying the change. If re-authentication fails, the password is not updated.
+  </Step>
+</Steps>
+
+<Warning>
+  If you enter the wrong current password, the change will be rejected. Make sure you remember your existing password before attempting to update it. If you have forgotten your password entirely, use the password reset flow on the login screen.
+</Warning>
+
+## Email address
+
+Your registered email address is displayed on the profile screen but is **read-only**. It is the address associated with your Supabase account and is used for authentication and any account recovery emails.
+
+<Info>
+  To change your email address, contact support. This action cannot be performed from within the app.
+</Info>
+
+## User data structure
+
+The profile screen reads and writes from the `User` object defined in `lib/app-context.tsx`:
+
+```typescript
+interface User {
+  id: string     // Supabase user UUID (read-only)
+  name: string   // Display name (editable)
+  email: string  // Registered email (read-only)
+}
+```
+
+Password changes are handled directly by Supabase Auth and are not stored in the `User` interface.

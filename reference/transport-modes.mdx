@@ -1,0 +1,156 @@
+---
+title: "Transport modes"
+description: "Complete reference for transport modes tracked by Carbon Tracker, including emission factors and helper functions."
+---
+
+Carbon Tracker tracks travel emissions across six transport modes. Each mode has an **emission factor** expressed in kilograms of CO₂ equivalent per kilometre travelled (kg CO₂e/km). Factors represent average real-world values and include fuel production and vehicle manufacturing amortisation where applicable.
+
+## TypeScript interface
+
+```typescript
+export interface TransportMode {
+  id: string
+  name: string
+  icon: string
+  emissionFactor: number // kg CO2e per km
+  description: string
+}
+```
+
+<ResponseField name="id" type="string" required>
+  Unique kebab-case identifier used in function calls.
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Human-readable display name shown in the UI.
+</ResponseField>
+
+<ResponseField name="icon" type="string" required>
+  Icon identifier used to render the transport mode in the interface.
+</ResponseField>
+
+<ResponseField name="emissionFactor" type="number" required>
+  Kilograms of CO₂ equivalent emitted per kilometre travelled. Zero for zero-emission modes.
+</ResponseField>
+
+<ResponseField name="description" type="string" required>
+  Short plain-language description of the mode.
+</ResponseField>
+
+## Transport modes
+
+| ID | Name | Emission factor (kg CO₂e/km) | Description |
+|----|------|-------------------------------|-------------|
+| `taxi` | Taxi | 0.210 | Taxi/Rideshare |
+| `car` | Car | 0.192 | Average passenger car |
+| `motor` | Motor | 0.113 | Motorcycle |
+| `bus` | Bus | 0.089 | City bus |
+| `cycle` | Cycle | 0.000 | Bicycle |
+| `walk` | Walk | 0.000 | Walking |
+
+<Tip>
+  Walking and cycling produce zero direct emissions. They are the baseline for the efficiency comparison functions described below.
+</Tip>
+
+<Note>
+  The bus emission factor (0.089 kg CO₂e/km) assumes average urban occupancy. A taxi or rideshare produces more than twice the per-km emissions of a bus for the same journey.
+</Note>
+
+## Functions
+
+### `calculateTransportEmissions(modeId, distanceKm)`
+
+Returns the total kg CO₂e for a journey at a given distance.
+
+```typescript
+function calculateTransportEmissions(modeId: string, distanceKm: number): number
+```
+
+<ParamField path="modeId" type="string" required>
+  The `id` of the `TransportMode`. Must match an entry in `TRANSPORT_MODES`.
+</ParamField>
+
+<ParamField path="distanceKm" type="number" required>
+  Distance of the journey in kilometres.
+</ParamField>
+
+**Examples**
+
+```typescript
+calculateTransportEmissions("car", 20)
+// => 0.192 × 20 = 3.84 kg CO₂e
+
+calculateTransportEmissions("bus", 20)
+// => 0.089 × 20 = 1.78 kg CO₂e
+
+calculateTransportEmissions("cycle", 20)
+// => 0.000 × 20 = 0 kg CO₂e
+```
+
+---
+
+### `getTransportEfficiency(modeId)`
+
+Returns a qualitative efficiency rating for the given transport mode.
+
+```typescript
+function getTransportEfficiency(modeId: string): "zero" | "low" | "medium" | "high"
+```
+
+<ParamField path="modeId" type="string" required>
+  The `id` of the `TransportMode`.
+</ParamField>
+
+| Return value | Modes |
+|--------------|-------|
+| `"zero"` | `walk`, `cycle` |
+| `"low"` | `bus` |
+| `"medium"` | `motor` |
+| `"high"` | `car`, `taxi` |
+
+**Example**
+
+```typescript
+getTransportEfficiency("bus")   // => "low"
+getTransportEfficiency("car")   // => "high"
+getTransportEfficiency("walk")  // => "zero"
+```
+
+---
+
+### `getTransportComparison(modeId)`
+
+Returns an object describing how the given mode compares to taking the bus for the same journey. The bus is used as the reference point because it is the baseline public-transport option.
+
+```typescript
+function getTransportComparison(modeId: string): {
+  modeId: string
+  referenceModeId: "bus"
+  factorVsBus: number      // emission factor ratio vs bus (1.0 = same as bus)
+  savingsPercentage: number // % lower emissions vs bus (negative = higher)
+}
+```
+
+<ParamField path="modeId" type="string" required>
+  The `id` of the `TransportMode` to compare.
+</ParamField>
+
+**Examples**
+
+```typescript
+getTransportComparison("car")
+// {
+//   modeId: "car",
+//   referenceModeId: "bus",
+//   factorVsBus: 2.16,          // car emits ~2.16× more than bus per km
+//   savingsPercentage: -116     // 116% higher emissions vs bus
+// }
+
+getTransportComparison("cycle")
+// {
+//   modeId: "cycle",
+//   referenceModeId: "bus",
+//   factorVsBus: 0,
+//   savingsPercentage: 100      // 100% fewer emissions than bus
+// }
+```

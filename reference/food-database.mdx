@@ -1,0 +1,171 @@
+---
+title: "Food database"
+description: "Complete reference for all food items tracked by Carbon Tracker, including emission factors and calculation details."
+---
+
+The food database contains every food item the app can track. Each item carries an **emission factor** expressed in kilograms of CO₂ equivalent per kilogram of food consumed (kg CO₂e/kg). These factors are derived from lifecycle assessment (LCA) research and account for production, processing, and transport.
+
+## TypeScript interface
+
+```typescript
+export interface FoodItem {
+  id: string
+  name: string
+  emoji: string
+  emissionFactor: number // kg CO2e per kg of food
+  category: string
+}
+```
+
+<ResponseField name="id" type="string" required>
+  Unique kebab-case identifier used in function calls (e.g. `"beef"`, `"ground-beef"`).
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  Human-readable display name shown in the UI.
+</ResponseField>
+
+<ResponseField name="emoji" type="string" required>
+  Single emoji character representing the food item.
+</ResponseField>
+
+<ResponseField name="emissionFactor" type="number" required>
+  Kilograms of CO₂ equivalent emitted per kilogram of this food. Used directly in emission calculations.
+</ResponseField>
+
+<ResponseField name="category" type="string" required>
+  One of: `Meat`, `Seafood`, `Dairy`, `Grains`, `Legumes`, `Vegetables`, `Fruits`, `Beverages`, `Processed`.
+</ResponseField>
+
+## Food items by category
+
+### Meat
+
+| ID | Name | Emission factor (kg CO₂e/kg) |
+|----|------|-------------------------------|
+| `beef` | Beef | 27.0 |
+| `ground-beef` | Ground beef | 27.0 |
+| `lamb` | Lamb | 24.0 |
+| `pork` | Pork | 12.1 |
+| `chicken` | Chicken | 6.9 |
+| `turkey` | Turkey | 5.5 |
+
+<Note>
+  Beef and lamb have the highest emission factors in the entire database. Replacing one weekly beef meal with chicken reduces food-related emissions by roughly 80% for that meal.
+</Note>
+
+### Seafood
+
+| ID | Name | Emission factor (kg CO₂e/kg) |
+|----|------|-------------------------------|
+| `shrimp` | Shrimp | 11.8 |
+| `tuna` | Tuna | 6.1 |
+| `salmon` | Salmon | 6.0 |
+| `fish` | Fish (general) | 5.4 |
+
+### Dairy
+
+| ID | Name | Emission factor (kg CO₂e/kg) |
+|----|------|-------------------------------|
+| `cheese` | Cheese | 13.5 |
+| `butter` | Butter | 11.9 |
+| `eggs` | Eggs (dozen) | 4.8 |
+| `milk` | Milk (1 L) | 3.2 |
+| `yogurt` | Yogurt | 2.2 |
+
+<Info>
+  For milk, the emission factor applies per litre, not per kilogram. The app treats 1 L of milk as 1 kg for calculation purposes.
+</Info>
+
+### Grains
+
+| ID | Name | Emission factor (kg CO₂e/kg) |
+|----|------|-------------------------------|
+| `rice` | Rice | 4.0 |
+| `oats` | Oats | 1.6 |
+| `pasta` | Pasta | 1.5 |
+| `bread` | Bread | 1.4 |
+
+### Legumes
+
+| ID | Name | Emission factor (kg CO₂e/kg) |
+|----|------|-------------------------------|
+| `tofu` | Tofu | 3.0 |
+| `lentils` | Lentils | 0.9 |
+| `chickpeas` | Chickpeas | 0.8 |
+| `beans` | Beans | 0.8 |
+
+### Vegetables
+
+| ID | Name | Emission factor (kg CO₂e/kg) |
+|----|------|-------------------------------|
+| `tomatoes` | Tomatoes | 1.4 |
+| `mixed-salad` | Mixed salad | 0.7 |
+| `potato` | Potato | 0.5 |
+| `broccoli` | Broccoli | 0.5 |
+| `oranges` | Oranges | 0.5 |
+| `carrots` | Carrots | 0.4 |
+
+### Fruits
+
+| ID | Name | Emission factor (kg CO₂e/kg) |
+|----|------|-------------------------------|
+| `avocado` | Avocado | 1.3 |
+| `bananas` | Bananas | 0.7 |
+| `apple` | Apple | 0.4 |
+
+### Beverages
+
+| ID | Name | Emission factor (kg CO₂e/kg) |
+|----|------|-------------------------------|
+| `coffee` | Coffee | 8.0 |
+| `tea` | Tea | 1.2 |
+| `orange-juice` | Orange juice | 1.1 |
+
+<Note>
+  Coffee has a surprisingly high emission factor (8.0 kg CO₂e/kg) due to the energy-intensive roasting process and supply chain.
+</Note>
+
+### Processed
+
+| ID | Name | Emission factor (kg CO₂e/kg) |
+|----|------|-------------------------------|
+| `chocolate` | Chocolate | 19.0 |
+| `hamburger` | Hamburger | 14.0 |
+| `pizza` | Pizza | 5.0 |
+
+## Emission calculation
+
+Food emissions are calculated from the item's emission factor and the mass consumed:
+
+```
+emissions (kg CO₂e) = emissionFactor × (gramsConsumed / 1000)
+```
+
+### `calculateFoodEmissions(foodId, gramsConsumed)`
+
+Returns the kg CO₂e produced by consuming a given mass of a food item.
+
+```typescript
+function calculateFoodEmissions(foodId: string, gramsConsumed: number): number
+```
+
+<ParamField path="foodId" type="string" required>
+  The `id` field of the target `FoodItem`. Must match an entry in `FOOD_DATABASE`.
+</ParamField>
+
+<ParamField path="gramsConsumed" type="number" required>
+  Mass of the food consumed, in grams.
+</ParamField>
+
+**Example**
+
+```typescript
+// A 250 g beef steak
+calculateFoodEmissions("beef", 250)
+// => 27.0 × (250 / 1000) = 6.75 kg CO₂e
+
+// A 100 g serving of lentils
+calculateFoodEmissions("lentils", 100)
+// => 0.9 × (100 / 1000) = 0.09 kg CO₂e
+```

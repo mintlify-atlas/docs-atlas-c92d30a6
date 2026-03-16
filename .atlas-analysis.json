@@ -1,0 +1,90 @@
+{
+  "projectType": "saas",
+  "projectName": "Carbon Tracker",
+  "projectDescription": "A mobile-first web app that helps users track and reduce their carbon footprint by logging food consumption and transport activities, with social rankings and daily eco-tips.",
+  "theme": "palm",
+  "primaryColor": "#3B82F6",
+  "lightColor": "#10B981",
+  "darkColor": "#1E3A5F",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart"]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/dashboard",
+              "features/log-food",
+              "features/log-transport",
+              "features/history",
+              "features/ranking",
+              "features/profile"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/setup",
+              "guides/database-setup",
+              "guides/carbon-calculations"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Data Reference",
+            "pages": [
+              "reference/food-database",
+              "reference/transport-modes",
+              "reference/environmental-tips"
+            ]
+          },
+          {
+            "group": "Database Schema",
+            "pages": [
+              "reference/schema-profiles",
+              "reference/schema-activities",
+              "reference/schema-friendships"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Daily carbon emissions tracking with a visual ring indicator",
+    "Food logging with CO2e emission factors for 35+ food items",
+    "Transport logging covering car, bus, motorcycle, taxi, cycling, and walking",
+    "Weekly emissions chart showing 7-day trend",
+    "Social rankings system with friend codes and weekly leaderboard",
+    "Daily environmental tips personalized to emission levels",
+    "User authentication and profile management via Supabase",
+    "Persistent activity history with full log view"
+  ],
+  "publicApiSurface": [
+    "login(email, password) → Promise<{success, error?}>",
+    "register(name, email, password) → Promise<{success, error?}>",
+    "logout() → Promise<void>",
+    "addActivity(entry) → Promise<void>",
+    "getTodayEmissions() → number",
+    "getYesterdayEmissions() → number",
+    "getWeeklyData() → {day, emissions}[]",
+    "getRecentActivities() → ActivityEntry[]",
+    "updateUserName(newName) → Promise<{success, error?}>",
+    "updatePassword(currentPassword, newPassword) → Promise<{success, error?}>",
+    "calculateFoodEmissions(foodId, gramsConsumed) → number",
+    "calculateTransportEmissions(modeId, distanceKm) → number",
+    "getTransportEfficiency(modeId) → string",
+    "getTransportComparison(modeId) → string",
+    "getRandomTip() → EnvironmentalTip",
+    "getTipsByCategory(category) → EnvironmentalTip[]"
+  ]
+}
